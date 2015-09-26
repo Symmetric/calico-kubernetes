@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+mkdir -p /var/log/calico/kubernetes
+docker run -v /var/log/calico/kubernetes:/var/log/calico/kubernetes -i calico/kubernetes-cni /code/calico_kubernetes_cni "$@" <&0
