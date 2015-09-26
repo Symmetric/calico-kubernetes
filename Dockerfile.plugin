@@ -1,0 +1,11 @@
+FROM debian
+
+RUN mkdir -p code
+COPY dist/calico_kubernetes_cni /code/
+WORKDIR code
+RUN apt-get update && apt-get install -y curl
+RUN curl -LO https://github.com/projectcalico/calico-docker/releases/download/v0.6.0/calicoctl
+RUN chmod +x calicoctl
+#RUN export PATH=$PATH:/sbin
+
+CMD ["/code/calico_kubernetes_cni"]

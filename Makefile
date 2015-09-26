@@ -1,16 +1,14 @@
 .PHONY: all binary ut clean
 
 SRCDIR=calico_kubernetes
-BUILD_DIR=.
-BUILD_FILES=$(BUILD_DIR)/Dockerfile $(BUILD_DIR)/requirements.txt
 
 default: all
 all: binary test
 test: ut
 
 # Build a new docker image to be used by binary or tests
-buildcontainer.created: $(BUILD_FILES)
-	docker build -t calico/kubernetes-cni-build .
+buildcontainer.created: 
+	docker build -t calico/kubernetes-cni-build -f=Dockerfile.build .
 	touch buildcontainer.created
 
 binary: buildcontainer.created
@@ -24,6 +22,13 @@ binary: buildcontainer.created
 	-v `pwd`/dist:/code/dist \
 	-e PYTHONPATH=/code/calico_kubernetes \
 	calico/kubernetes-cni-build pyinstaller calico_kubernetes/calico_kubernetes_cni.py -a -F -s --clean
+
+.PHONY: plugin
+plugin: plugincontainer.created
+
+plugincontainer.created: binary
+	docker build -t calico/kubernetes-cni -f=Dockerfile.plugin .
+	touch plugincontainer.created
 
 ut: buildcontainer.created
 	docker run --rm -v `pwd`/calico_kubernetes:/code/calico_kubernetes \
