@@ -19,20 +19,20 @@ from netaddr import IPAddress, IPNetwork
 from subprocess import CalledProcessError
 from docker.errors import APIError
 from nose.tools import assert_equal
-from calico_kubernetes import calico_kubernetes
+from calico_kubernetes import plugin
 from pycalico.datastore import IF_PREFIX
 from pycalico.datastore_datatypes import Profile, Endpoint
 from pycalico.block import AlreadyAssignedError
 from nose.tools import assert_true
 
 # noinspection PyProtectedMember
-from calico_kubernetes.calico_kubernetes import _log_interfaces
+from calico_kubernetes.plugin import _log_interfaces
 
 # noinspection PyUnresolvedReferences
 patch_object = patch.object
 
-TEST_HOST = calico_kubernetes.HOSTNAME
-TEST_ORCH_ID = calico_kubernetes.ORCHESTRATOR_ID
+TEST_HOST = plugin.HOSTNAME
+TEST_ORCH_ID = plugin.ORCHESTRATOR_ID
 
 _log = logging.getLogger(__name__)
 
@@ -42,9 +42,9 @@ class NetworkPluginTest(unittest.TestCase):
     def setUp(self):
         # Mock out sh so it doesn't fail when trying to find the
         # calicoctl binary (which may not exist)
-        with patch('calico_kubernetes.calico_kubernetes.sh.Command',
+        with patch('calico_kubernetes.plugin.sh.Command',
                    autospec=True) as m_sh:
-            self.plugin = calico_kubernetes.NetworkPlugin()
+            self.plugin = plugin.NetworkPlugin()
 
     def test_create(self):
         with patch_object(self.plugin, '_configure_interface',
@@ -122,15 +122,14 @@ class NetworkPluginTest(unittest.TestCase):
                              autospec=True) as m_delete_docker_interface, \
                 patch_object(self.plugin, '_container_add',
                              autospec=True) as m_container_add, \
-                patch_object(calico_kubernetes, 'generate_cali_interface_name',
+                patch_object(plugin, 'generate_cali_interface_name',
                              autospec=True) as m_generate_cali_interface_name, \
                 patch_object(self.plugin, '_get_node_ip',
                              autospec=True) as m_get_node_ip, \
-                patch_object(calico_kubernetes, 'check_call',
+                patch_object(plugin, 'check_call',
                              autospec=True) as m_check_call, \
-                patch('calico_kubernetes.tests.kube_plugin_test.'
-                      'calico_kubernetes._log_interfaces',
-                      autospec=True) as _:
+                patch('calico_kubernetes.tests.plugin_test.'
+                      'plugin._log_interfaces', autospec=True) as _:
             # Set up mock objects
             m_get_container_pid.return_value = 'container_pid'
             m_read_docker_ip.return_value = IPAddress('1.1.1.1')
@@ -165,7 +164,7 @@ class NetworkPluginTest(unittest.TestCase):
                           autospec=True) as m_datastore_client, \
                 patch_object(self.plugin, '_validate_container_state',
                              autospec=True) as m_validate_container_state, \
-                patch('calico_kubernetes.calico_kubernetes.netns.PidNamespace', autospec=True) as m_pid_ns, \
+                patch('calico_kubernetes.plugin.netns.PidNamespace', autospec=True) as m_pid_ns, \
                 patch_object(self.plugin, '_read_docker_ip', autospec=True) as m_read_docker_ip:
             # Set up mock objs
             m_datastore_client.get_endpoint.side_effect = KeyError
@@ -216,7 +215,7 @@ class NetworkPluginTest(unittest.TestCase):
 
     def test_container_remove(self):
         with patch_object(self.plugin, '_datastore_client', autospec=True) as m_datastore_client, \
-                patch('calico_kubernetes.calico_kubernetes.netns.remove_veth', autospec=True) as m_remove_veth:
+                patch('calico_kubernetes.plugin.netns.remove_veth', autospec=True) as m_remove_veth:
             #Set up mock objs
             endpoint = Endpoint(TEST_HOST, TEST_ORCH_ID, '1234', '5678',
                                 'active', 'mac')
@@ -337,7 +336,7 @@ class NetworkPluginTest(unittest.TestCase):
             patch.object(self.plugin, "_read_docker_ip") as m_read_ip:
 
             # Don't use CALICO_IPAM for this test.
-            calico_kubernetes.CALICO_IPAM = "false"
+            plugin.CALICO_IPAM = "false"
 
             # Mock the Docker IP
             docker_ip = "172.12.23.4"
@@ -362,7 +361,7 @@ class NetworkPluginTest(unittest.TestCase):
 
         Expect system exit
         """
-        with patch('calico_kubernetes.calico_kubernetes.get_host_ips',
+        with patch('calico_kubernetes.plugin.get_host_ips',
                    autospec=True) as m_get_host_ips:
             # Set up mock objects
             m_get_host_ips.return_value = ['1.2.3.4','4.2.3.4']
@@ -375,7 +374,7 @@ class NetworkPluginTest(unittest.TestCase):
             self.assertEqual(return_val, '1.2.3.4')
 
     def test_get_node_ip(self):
-        with patch('calico_kubernetes.calico_kubernetes.get_host_ips',
+        with patch('calico_kubernetes.plugin.get_host_ips',
                    autospec=True) as m_get_host_ips:
             # Set up mock objects
             m_get_host_ips.return_value = []
@@ -397,7 +396,7 @@ class NetworkPluginTest(unittest.TestCase):
             self.assertEqual(return_val, IPAddress('1.2.3.4'))
 
     def test_delete_docker_interface(self):
-        with patch_object(calico_kubernetes, 'check_output',
+        with patch_object(plugin, 'check_output',
                           autospec=True) as m_check_output, \
                 patch_object(self.plugin, '_get_container_pid', autospec=True) as m_get_container_pid:
             # Set up mock objects
@@ -548,7 +547,7 @@ class NetworkPluginTest(unittest.TestCase):
             with self.assertRaises(KeyError):
                 self.plugin._get_pod_config()
 
-    @patch('calico_kubernetes.calico_kubernetes.requests.Session',
+    @patch('calico_kubernetes.plugin.requests.Session',
            autospec=True)
     @patch('json.loads', autospec=True)
     def test_get_api_path(self, m_json_load, m_session):
@@ -572,7 +571,7 @@ class NetworkPluginTest(unittest.TestCase):
         m_session_return.headers.update.assert_called_once_with(
             {'Authorization': 'Bearer ' + 'TOKEN'})
         m_session_return.get.assert_called_once_with(
-            calico_kubernetes.KUBE_API_ROOT + 'path/to/api/object',
+            plugin.KUBE_API_ROOT + 'path/to/api/object',
             verify=False)
         m_json_load.assert_called_once_with('response_body')
 
@@ -671,8 +670,7 @@ class NetworkPluginTest(unittest.TestCase):
             # Call method under test expecting sys exit
             self.assertRaises(SystemExit, self.plugin._apply_tags, pod)
 
-    @patch('calico_kubernetes.tests.kube_plugin_test.'
-           'calico_kubernetes.check_output',
+    @patch('calico_kubernetes.tests.plugin_test.plugin.check_output',
            autospec=True, return_value='MOCK_OUTPUT')
     def test_log_interfaces(self, m_check_output):
         _log_interfaces('testNAMESPACE')
@@ -686,11 +684,11 @@ class NetworkPluginTest(unittest.TestCase):
                      ])
 
     @patch('sys.exit', autospec=True)
-    @patch('calico_kubernetes.calico_kubernetes.run')
-    @patch('calico_kubernetes.tests.kube_plugin_test.'
-           'calico_kubernetes.configure_logger', autospec=True)
+    @patch('calico_kubernetes.plugin.run')
+    @patch('calico_kubernetes.tests.plugin_test.plugin.configure_logger',
+           autospec=True)
     def test_run_protected(self, m_conf_logger, m_run, m_sys_exit):
-        calico_kubernetes.run_protected()
+        plugin.run_protected()
 
         # Check that the logger was set up; don't care about the details.
         assert_true(len(m_conf_logger.mock_calls) > 0)
@@ -700,15 +698,15 @@ class NetworkPluginTest(unittest.TestCase):
         m_sys_exit.assert_called_with(0)
 
     @patch('sys.exit', autospec=True)
-    @patch('calico_kubernetes.calico_kubernetes.run')
-    @patch('calico_kubernetes.tests.kube_plugin_test.'
-           'calico_kubernetes.configure_logger', autospec=True)
+    @patch('calico_kubernetes.plugin.run')
+    @patch('calico_kubernetes.tests.plugin_test.plugin.configure_logger',
+           autospec=True)
     def test_run_protected_sys_exit(self, _, m_run, m_sys_exit):
         for exception_cls in (SystemExit, RuntimeError):
             _log.info('Testing that we handle %s exceptions',
                       str(exception_cls.__name__))
             m_run.side_effect = exception_cls
-            calico_kubernetes.run_protected()
+            plugin.run_protected()
 
             # Check we actually called the work function.
             m_run.assert_called_with()

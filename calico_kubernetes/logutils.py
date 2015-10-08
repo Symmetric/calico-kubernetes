@@ -12,7 +12,7 @@ def configure_logger(logger, log_level, root_logger=False, log_dir=LOG_DIR):
     """
     Configures logging to the file 'calico.log' in the specified log directory
 
-    If the logs are not coming from calico_kubernetes.py, format the log to
+    If the logs are not coming from plugin.py, format the log to
      include the filename of origin
 
     Additionally configures a stdout handler which logs INFO and

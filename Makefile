@@ -24,7 +24,7 @@ binary: kubernetesbuild.created
 	-v `pwd`/calico_kubernetes:/code/calico_kubernetes \
 	-v `pwd`/dist:/code/dist \
 	-e PYTHONPATH=/code/calico_kubernetes \
-	calico/kubernetes-build pyinstaller calico_kubernetes/calico_kubernetes.py -a -F -s --clean
+	calico/kubernetes-build pyinstaller calico_kubernetes/plugin.py -a -F -s --clean
 
 ut: kubernetesbuild.created
 	docker run --rm -v `pwd`/calico_kubernetes:/code/calico_kubernetes \
